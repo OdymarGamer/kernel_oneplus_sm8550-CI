@@ -18,17 +18,46 @@ jobs:
       run: |
         git clone https://github.com/PixelOS-Devices/kernel_oneplus_sm8550.git --depth=1 -b fifteen kernel/oneplus/sm8550
         git clone https://github.com/PixelOS-Devices/kernel_oneplus_sm8550-modules.git --depth=1 -b fifteen kernel/oneplus/sm8550-modules
+    
+    - name: Setup release name
+      run: |
+        cd kernel/oneplus/sm8550
+        SUBLEVEL=$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')
+        REL_NAME="OPNCE4-v5.15.${SUBLEVEL}-$(date +"%Y%m%d")"
+        echo "REL_NAME=${REL_NAME}" >> $GITHUB_ENV
 
-    - name: Build Kernel
+    - name: Build base kernel
+      run: |
+        cd kernel/oneplus/sm8550
+        build_sm8550 --benz
+        mv kernel.zip ${HOME}/kernel.zip
+        git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
+        cd -
+
+    - name: Build Kernel with ksu
       run: |
         cd kernel/oneplus/sm8550
         build_sm8550 --ksu --benz
-        SUBLEVEL=$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')
-        ZIP_NAME="OPNCE4-v5.15.${SUBLEVEL}-$(date +"%Y%m%d-%H%M")"
-        echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-        mv out/kernel.zip ./${ZIP_NAME}.zip
+        mv kernel.zip ${HOME}/ksu.zip
         git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
+        cd -
+
+    - name: Build Kernel with ksu-next
+      run: |
+        cd kernel/oneplus/sm8550
+        build_sm8550 --ksu-next --benz
+        mv kernel.zip ${HOME}/ksu-next.zip
+        git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
+        cd -
+
+    - name: Build Kernel with ksu-next + susfs
+      run: |
+        cd kernel/oneplus/sm8550
+        build_sm8550 --ksu-next-susfs --benz
+        mv kernel.zip ${HOME}/ksu-next-susfs.zip
+        git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
+        cd -
 
     - name: Create GitHub Release
       run: |
-        gh release create "$ZIP_NAME" --title "$ZIP_NAME" --notes "" out/${ZIP_NAME}.zip
+        gh release create "$REL_NAME" --title "$REL_NAME" --notes "" ${HOME}/kernel.zip ${HOME}/ksu.zip ${HOME}/ksu-next.zip ${HOME}/ksu-next-susfs.zip
