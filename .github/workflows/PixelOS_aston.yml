@@ -21,6 +21,7 @@ jobs:
     
     - name: Setup release name
       run: |
+        rm -rf ${GITHUB_WORKSPACE}/*.zip
         cd kernel/oneplus/sm8550
         SUBLEVEL=$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')
         REL_NAME="OP12R-v5.15.${SUBLEVEL}-$(date +"%Y%m%d")"
@@ -29,35 +30,36 @@ jobs:
     - name: Build base kernel
       run: |
         cd kernel/oneplus/sm8550
-        build_sm8550
-        mv kernel.zip ${HOME}/kernel.zip
+        build_sm8550 --clean
+        mv kernel.zip ${GITHUB_WORKSPACE}/kernel.zip
         git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
         cd -
 
     - name: Build Kernel with ksu
       run: |
         cd kernel/oneplus/sm8550
-        build_sm8550 --ksu
-        mv kernel.zip ${HOME}/ksu.zip
+        build_sm8550 --clean --ksu
+        mv kernel.zip ${GITHUB_WORKSPACE}/ksu.zip
         git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
         cd -
 
     - name: Build Kernel with ksu-next
       run: |
         cd kernel/oneplus/sm8550
-        build_sm8550 --ksu-next
-        mv kernel.zip ${HOME}/ksu-next.zip
+        build_sm8550 --clean --ksu-next
+        mv kernel.zip ${GITHUB_WORKSPACE}/ksu-next.zip
         git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
         cd -
 
     - name: Build Kernel with ksu-next + susfs
       run: |
         cd kernel/oneplus/sm8550
-        build_sm8550 --ksu-next-susfs
-        mv kernel.zip ${HOME}/ksu-next-susfs.zip
+        build_sm8550 --clean --ksu-next-susfs
+        mv kernel.zip ${GITHUB_WORKSPACE}/ksu-next-susfs.zip
         git clean -fdx && find . -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" \; -print | xargs rm -rf && git reset --hard
         cd -
 
     - name: Create GitHub Release
       run: |
-        gh release create "$REL_NAME" --title "$REL_NAME" --notes "" ${HOME}/kernel.zip ${HOME}/ksu.zip ${HOME}/ksu-next.zip ${HOME}/ksu-next-susfs.zip
+        cd ${GITHUB_WORKSPACE}
+        gh release create "$REL_NAME" --title "$REL_NAME" --notes "" kernel.zip ksu.zip ksu-next.zip ksu-next-susfs.zip
