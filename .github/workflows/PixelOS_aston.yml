@@ -6,7 +6,7 @@ on:
 jobs:
   PixelOS_Kernel_CI:
     name: PixelOS Kernel CI (aston)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
 
     - name: Checkout Repository
